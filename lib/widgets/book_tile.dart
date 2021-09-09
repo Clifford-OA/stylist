@@ -21,6 +21,13 @@ class _BookedTileState extends State<BookedTile> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
+               widget.service['imgUrl'].contains('http')
+              ? CircleAvatar(
+                  radius: 30,
+                  child: Image.network(widget.service['imgUrl']),
+                )
+              : CircleAvatar(radius: 30),
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
@@ -48,13 +55,13 @@ class _BookedTileState extends State<BookedTile> {
                   ),
                 ],
               ),
-              Text(
-                '\Ghc${widget.service['price']}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
+              // Text(
+              //   '\Ghc${widget.service['price']}',
+              //   style: TextStyle(
+              //     fontWeight: FontWeight.bold,
+              //     fontSize: 18,
+              //   ),
+              // ),
               MaterialButton(
                 onPressed: () => Navigator.push(
                     context,

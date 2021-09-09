@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:stylist/auth/stylist.dart';
@@ -20,9 +21,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String name = '';
   String salon = '';
-  int tel = 0;
+  String _tel = '';
+  bool _loadImage = false;
 
-  Widget textfield({@required hintText, onChanged}) {
+  Widget textfield({@required hintText, onChanged, formatters, TextInputType? inputType}) {
     return Material(
       elevation: 3,
       shadowColor: Colors.grey,
@@ -30,9 +32,10 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextField(
+        inputFormatters: formatters,
         onChanged: onChanged,
-        keyboardType:
-            hintText == 'tel' ? TextInputType.number : TextInputType.text,
+        keyboardType: inputType,
+            // hintText == 'tel' ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(
@@ -51,12 +54,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final stylistClass = Provider.of<Stylist>(context, listen: false);
+    final stylistClass = Provider.of<Stylist>(context, listen: true);
     String stylistName = stylistClass.stylistName;
     String saloonName = stylistClass.saloonName;
     String email = stylistClass.email;
     String image = stylistClass.imgUrl;
-    int tel = stylistClass.tel;
+    String tel = stylistClass.tel;
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile Page'),
@@ -98,16 +101,21 @@ class _ProfilePageState extends State<ProfilePage> {
                       height: MediaQuery.of(context).size.width / 2,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(100.0),
-                        child: FadeInImage.assetNetwork(
-                          placeholder: 'assets/images/no_picture.jpg',
-                          image: image,
-                          imageErrorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/images/no_picture.jpg',
-                            );
-                          },
-                          fit: BoxFit.cover,
-                        ),
+                        child: _loadImage == false
+                            ? FadeInImage.assetNetwork(
+                                placeholder: 'assets/images/no_picture.jpg',
+                                image: image,
+                                imageErrorBuilder:
+                                    (context, error, stackTrace) {
+                                  return Image.asset(
+                                    'assets/images/no_picture.jpg',
+                                  );
+                                },
+                                fit: BoxFit.cover,
+                              )
+                            : Center(
+                                child: CircularProgressIndicator(),
+                              ),
                       ),
                     ),
                   ],
@@ -120,6 +128,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       textfield(
+                        inputType: TextInputType.text,
+                        formatters: [
+                               FilteringTextInputFormatter.allow(RegExp('[a-zA-Z]'))
+                            ],
                           hintText: stylistName,
                           onChanged: (value) {
                             setState(() {
@@ -127,6 +139,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             });
                           }),
                       textfield(
+                        inputType: TextInputType.text,
+                        formatters: [
+                                FilteringTextInputFormatter.allow(RegExp('[a-zA-Z]'))
+                            ],
                           hintText: saloonName,
                           onChanged: (value) {
                             setState(() {
@@ -134,6 +150,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             });
                           }),
                       textfield(
+                        inputType: TextInputType.text,
                           hintText: email,
                           onChanged: (value) {
                             setState(() {
@@ -141,10 +158,14 @@ class _ProfilePageState extends State<ProfilePage> {
                             });
                           }),
                       textfield(
-                          hintText: tel.toString(),
+                        inputType: TextInputType.number,
+                        formatters: [
+                               FilteringTextInputFormatter.digitsOnly
+                            ],
+                          hintText: tel,
                           onChanged: (value) {
                             setState(() {
-                              tel = int.parse(value);
+                              tel = value;
                             });
                           }),
                       RoundedButton(
@@ -180,14 +201,22 @@ class _ProfilePageState extends State<ProfilePage> {
     late File image;
     String tid = stylistClass.tid;
     final XFile? img = await _picker.pickImage(source: ImageSource.gallery);
+    _loadImage = true;
+    File file = File(img!.path);
     setState(() {
-      image = img as File;
+      image = file;
     });
     var storeImage = FirebaseStorage.instance.ref().child(image.path);
+    var task = await storeImage.putFile(image);
     imgUrl = await storeImage.getDownloadURL();
     print('downloadurl ' + imgUrl);
-    await FirebaseFirestore.instance.collection('stylists').doc(tid).update(
-        {'imgUrl': imgUrl}).then((value) => stylistClass.imageUrl = imgUrl);
+    await FirebaseFirestore.instance
+        .collection('stylists')
+        .doc(tid)
+        .update({'imgUrl': imgUrl}).then((value) {
+      stylistClass.imageUrl = imgUrl;
+      _loadImage = false;
+    });
   }
 
 // validate and update stylist info
@@ -199,7 +228,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final errorResult = validateName();
     if (errorResult['status']) {
       await stylist.doc(tid).update(
-          {'stylistName': name, 'saloonName': salon, 'tel': tel}).then((value) {
+          {'stylistName': name, 'saloonName': salon, 'tel': _tel}).then((value) {
         _reloadUserData();
         Navigator.pushNamed(context, 'HomeScreen');
         print('created successfully');
@@ -229,7 +258,7 @@ class _ProfilePageState extends State<ProfilePage> {
   validateName() {
     Map errorHandler = {'status': false, 'message': ''};
 
-    if (name.isEmpty || salon.isEmpty || tel.isNaN) {
+    if (name.isEmpty || salon.isEmpty || _tel.isEmpty) {
       errorHandler['message'] = 'None of the field should be empty';
       return errorHandler;
     } else if (name.length < 4) {
@@ -240,7 +269,7 @@ class _ProfilePageState extends State<ProfilePage> {
       errorHandler['message'] =
           'saloon name should not be more than 20 characters';
       return errorHandler;
-    } else if (tel.toString().trim().length != 10) {
+    } else if (_tel.trim().length != 10) {
       errorHandler['message'] = 'tel field should be only 10 integers';
       return errorHandler;
     } else {

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:stylist/auth/stylist.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -60,11 +61,13 @@ class _AddServiceState extends State<AddService> {
                       SizedBox(
                         height: 50,
                       ),
-                      Text(
-                        'Add Service',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
+                      Center(
+                        child: Text(
+                          'Add Service',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                          ),
                         ),
                       ),
                       SizedBox(
@@ -80,6 +83,10 @@ class _AddServiceState extends State<AddService> {
                         hint: 'title',
                         inputType: TextInputType.emailAddress,
                         inputAction: TextInputAction.next,
+                         formatters: [
+                               FilteringTextInputFormatter.allow(RegExp('[a-zA-Z ]'))
+
+                            ],
                       ),
                       TextInputField(
                         onChanged: (value) {
@@ -89,8 +96,12 @@ class _AddServiceState extends State<AddService> {
                         },
                         icon: FontAwesomeIcons.envelope,
                         hint: 'price',
-                        inputType: TextInputType.emailAddress,
+                        inputType: TextInputType.number,
                         inputAction: TextInputAction.next,
+                         formatters: [
+                               FilteringTextInputFormatter.digitsOnly
+
+                            ],
                       ),
                       TextInputField(
                         onChanged: (value) {
@@ -99,9 +110,13 @@ class _AddServiceState extends State<AddService> {
                           });
                         },
                         icon: FontAwesomeIcons.envelope,
-                        hint: 'duration',
-                        inputType: TextInputType.emailAddress,
+                        hint: 'duration in min',
+                        inputType: TextInputType.number,
                         inputAction: TextInputAction.next,
+                         formatters: [
+                               FilteringTextInputFormatter.digitsOnly
+
+                            ],
                       ),
                       RoundedButton(
                         buttonName: 'Create',

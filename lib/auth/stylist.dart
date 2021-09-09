@@ -8,7 +8,7 @@ class Stylist extends ChangeNotifier {
   String tid;
   String stylistName;
   String imgUrl;
-  int tel;
+  String tel;
   List<dynamic> serviceList;
   String email;
 

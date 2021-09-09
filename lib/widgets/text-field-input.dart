@@ -8,6 +8,7 @@ class TextInputField extends StatefulWidget {
     required this.inputType,
     required this.inputAction,
     required this.onChanged,
+    this.formatters,
   });
 
   final IconData icon;
@@ -15,6 +16,7 @@ class TextInputField extends StatefulWidget {
   final TextInputType inputType;
   final TextInputAction inputAction;
   final Function(String) onChanged;
+    final formatters;
 
   @override
   State<TextInputField> createState() => _TextInputFieldState();
@@ -44,6 +46,7 @@ class _TextInputFieldState extends State<TextInputField> {
         ),
         child: Center(
           child: TextField(
+            inputFormatters: widget.formatters,
             onChanged: widget.onChanged,
             controller: _email,
             decoration: InputDecoration(

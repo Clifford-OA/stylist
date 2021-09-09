@@ -33,7 +33,7 @@ class UserData extends ChangeNotifier{
       'imgUrl': '',
       'rateAmount': 20,
       'rating': 3.4,
-      'tel': int.parse(tel),
+      'tel': tel,
     };
   }
 }

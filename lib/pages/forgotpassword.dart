@@ -22,7 +22,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     return isLoading == false
         ? Stack(
             children: [
-              backgroundImage('assets/images/background.jpg'),
+              backgroundImage('assets/images/1.jpg'),
               Scaffold(
                 backgroundColor: Colors.transparent,
                 appBar: AppBar(

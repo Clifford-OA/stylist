@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ? Stack(
             children: [
               backgroundImage(
-                'assets/images/background.jpg',
+                'assets/images/1.jpg',
               ),
               Scaffold(
                 backgroundColor: Colors.transparent,

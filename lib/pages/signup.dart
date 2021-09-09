@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:stylist/auth/auth.dart';
 import 'package:stylist/auth/stylist.dart';
 import 'package:stylist/auth/userData.dart';
@@ -60,7 +61,7 @@ class _SignUpState extends State<SignUp> {
     return isLoading == false
         ? Stack(
             children: [
-              backgroundImage('assets/images/background.jpg'),
+              backgroundImage('assets/images/1.jpg'),
               Scaffold(
                 backgroundColor: Colors.transparent,
                 body: SingleChildScrollView(
@@ -82,6 +83,10 @@ class _SignUpState extends State<SignUp> {
                             hint: 'stylist name',
                             inputType: TextInputType.name,
                             inputAction: TextInputAction.next,
+                            formatters: [
+                               FilteringTextInputFormatter.allow(RegExp('[a-zA-Z ]'))
+
+                            ],
                           ),
                            TextInputField(
                             onChanged: (value) {
@@ -93,6 +98,10 @@ class _SignUpState extends State<SignUp> {
                             hint: 'salon name',
                             inputType: TextInputType.name,
                             inputAction: TextInputAction.next,
+                             formatters: [
+                               FilteringTextInputFormatter.allow(RegExp('[a-zA-Z ]'))
+
+                            ],
                           ),
                           TextInputField(
                             onChanged: (value) {
@@ -115,6 +124,9 @@ class _SignUpState extends State<SignUp> {
                             hint: 'tel',
                             inputType: TextInputType.name,
                             inputAction: TextInputAction.next,
+                             formatters: [
+                               FilteringTextInputFormatter.digitsOnly
+                            ],
                           ),
                           PasswordInput(
                             onChanged: (value) {

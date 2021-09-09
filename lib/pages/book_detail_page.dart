@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:stylist/pages/show_image.dart';
 
 class BookDetailPage extends StatefulWidget {
   final service;
@@ -12,7 +13,7 @@ class BookDetailPage extends StatefulWidget {
 }
 
 class _BookDetailPageState extends State<BookDetailPage> {
-  Future _updateBookTile(BuildContext context) async {
+  Future _updateBookTile(BuildContext context, String label) async {
     CollectionReference bookList =
         FirebaseFirestore.instance.collection('booklist');
     List removeItem = [];
@@ -20,21 +21,23 @@ class _BookDetailPageState extends State<BookDetailPage> {
     await bookList
         .doc(widget.personId)
         .update({'bookedList': FieldValue.arrayRemove(removeItem)})
-        .then((value) => _reCreateService(context))
+        .then((value) => label == 'confirmed'
+            ? _reCreateService(context, label)
+            : _addToHistoryList(label))
         .catchError((error) {
           print("Failed to remove service: $error");
         });
   }
 
-  Future _reCreateService(BuildContext context) async {
+  Future _reCreateService(BuildContext context, String label) async {
     CollectionReference bookList =
         FirebaseFirestore.instance.collection('booklist');
     List createBook = [];
-    createBook.add(toMap(widget.service));
+    createBook.add(toMap(widget.service, label));
     await bookList.doc(widget.personId).update(
         {'bookedList': FieldValue.arrayUnion(createBook)}).then((value) {
       setState(() {
-        widget.service['status'] = 'confirmed';
+        widget.service['status'] = label;
       });
       Navigator.pop(context);
     }).catchError((error) {
@@ -42,12 +45,50 @@ class _BookDetailPageState extends State<BookDetailPage> {
     });
   }
 
-  Map<String, dynamic> toMap(dynamic data) {
+  Future<void> _addToHistoryList(String label) async {
+    CollectionReference historyList =
+        FirebaseFirestore.instance.collection('history');
+    List bookItem = [];
+    bookItem.add(toMap(widget.service, label));
+    List<String> ids = [];
+    // await FirebaseFirestore.instance
+    //     .collection('history')
+    await historyList.get().then((QuerySnapshot querySnapshot) {
+      querySnapshot.docs.forEach((doc) {
+        ids.add(doc.id);
+      });
+    });
+    if (ids.contains(widget.personId)) {
+      await historyList.doc(widget.personId).update(
+          {'historyList': FieldValue.arrayUnion(bookItem)}).then((value) {
+            setState(() {
+        widget.service['status'] = label;
+      });
+        Navigator.pop(context);
+      }).catchError((error) {
+        print("Failed to book: $error");
+      });
+    } else {
+      await historyList
+          .doc(widget.personId)
+          .set({'historyList': FieldValue.arrayUnion(bookItem)}).then((value) {
+            setState(() {
+        widget.service['status'] = label;
+      });
+        Navigator.pop(context);
+      }).catchError((error) {
+        print("Failed to book: $error");
+      });
+    }
+  }
+
+  Map<String, dynamic> toMap(dynamic data, String label) {
     return {
       'date': data['date'],
       'hostelName': data['hostelName'],
       'price': data['price'],
-      'status': 'confirmed',
+      'status': label,
+      'imgUrl' : data['imgUrl'],
       'stylistName': data['stylistName'],
       'tel': data['tel'],
       'tid': data['tid'],
@@ -57,8 +98,8 @@ class _BookDetailPageState extends State<BookDetailPage> {
     };
   }
 
-  void _confirmBook(BuildContext context) async {
-    await _updateBookTile(context);
+  void _confirmBook(BuildContext context, String label) async {
+    await _updateBookTile(context, label);
   }
 
   @override
@@ -115,8 +156,28 @@ class _BookDetailPageState extends State<BookDetailPage> {
                             fontSize: 30,
                           ),
                         ),
+                        widget.service['imgUrl'].contains('http')
+                            ? Center(
+                                child: GestureDetector(
+                                  child: CircleAvatar(
+                                    radius: 60,
+                                    child:
+                                        Image.network(widget.service['imgUrl']),
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => ShowImage(
+                                                  imgUrl:
+                                                      widget.service['imgUrl'],
+                                                )));
+                                  },
+                                ),
+                              )
+                            : Center(),
                         SizedBox(
-                          height: 10,
+                          height: 1,
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -321,20 +382,59 @@ class _BookDetailPageState extends State<BookDetailPage> {
                           ],
                         ),
 
-                        MaterialButton(
-                          onPressed: widget.service['status'] == 'pending'
-                              ? _showDialogAndAcceptAppointment
-                              : null,
-                          color: widget.service['status'] == 'pending'
-                              ? Color(0xffFF8573)
-                              : Colors.blue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            widget.service['status'],
-                            style: TextStyle(color: Colors.white),
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            widget.service['status'] == 'pending'
+                                ? MaterialButton(
+                                    onPressed: () {
+                                      _showDialogAndAcceptAppointment(
+                                          'confirmed');
+                                    },
+                                    color: Color(0xffFF8573),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      widget.service['status'],
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  )
+                                : widget.service['status'] == 'confirmed'
+                                    ? MaterialButton(
+                                        onPressed: () {
+                                          _showDialogAndAcceptAppointment(
+                                              'Done');
+                                        },
+                                        color: Colors.blue,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          'Done',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      )
+                                    : Center(),
+                            // Color(0xffFF8573)
+                            widget.service['status'] == 'reschedule'
+                                ? Center()
+                                : MaterialButton(
+                                    onPressed: () {
+                                      _showDialogAndAcceptAppointment(
+                                          'reschedule');
+                                    },
+                                    color: Colors.brown,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      'reschedule',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                          ],
                         ),
                       ],
                     ),
@@ -348,23 +448,43 @@ class _BookDetailPageState extends State<BookDetailPage> {
     );
   }
 
-  Future _showDialogAndAcceptAppointment() {
+  Future _showDialogAndAcceptAppointment(String label) {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(
-            "Confirm Alert!!",
-            style: TextStyle(
-              fontFamily: 'NimbusSanL',
-              fontWeight: FontWeight.w700,
-              color: Colors.red,
-              fontSize: 20,
-            ),
-          ),
+          title: label == 'confirmed'
+              ? Text(
+                  "Confirm Alert!!",
+                  style: TextStyle(
+                    fontFamily: 'NimbusSanL',
+                    fontWeight: FontWeight.w700,
+                    color: Colors.red,
+                    fontSize: 20,
+                  ),
+                )
+              : label == 'Done'
+                  ? Text('Appointment Done Alert!!',
+                      style: TextStyle(
+                        fontFamily: 'NimbusSanL',
+                        fontWeight: FontWeight.w700,
+                        color: Colors.blue,
+                        fontSize: 20,
+                      ))
+                  : Text('Reschedule Alert!!',
+                      style: TextStyle(
+                        fontFamily: 'NimbusSanL',
+                        fontWeight: FontWeight.w700,
+                        color: Colors.brown,
+                        fontSize: 20,
+                      )),
           content: Center(
-            child: Text(
-                "Confirmed Appointment can not be reversed.\Are you sure you want to accept this Appointment?"),
+            child: label == 'confirmed'
+                ? Text(
+                    "Confirmed Appointment can not be reversed.\Are you sure you want to accept this Appointment?")
+                : label == 'Done'
+                    ? Text('Are you sure you are done with this appointment?')
+                    : Text('Click on OK to reschedule this appointment'),
           ),
           actions: <Widget>[
             FlatButton(
@@ -392,7 +512,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                 ),
               ),
               onPressed: () {
-                _confirmBook(context);
+                _confirmBook(context, label);
               },
             ),
           ],

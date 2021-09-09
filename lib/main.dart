@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:stylist/pages/add_service_screen.dart';
 import 'package:stylist/pages/book_list.dart';
 import 'package:stylist/pages/forgotpassword.dart';
+import 'package:stylist/pages/history_screen.dart';
 import 'package:stylist/pages/home_screen.dart';
 import 'package:stylist/pages/login.dart';
 import 'package:stylist/pages/profile.dart';
@@ -49,7 +50,7 @@ class _MyAppState extends State<MyApp> {
                   create: (_) => UserData('', '', '', '', '', [], ''),
                 ),
                 ChangeNotifierProvider<Stylist>(
-                  create: (_) => Stylist('', '', '', [], 0, '', ''),
+                  create: (_) => Stylist('', '', '', [], '', '', ''),
                 ),
                 Provider<Service>(
                   create: (_) => Service('', 0.0, ''),
@@ -72,6 +73,7 @@ class _MyAppState extends State<MyApp> {
                   'BookList': (context) => BookList(),
                   'ProfilePage': (context) => ProfilePage(),
                   'AddService': (context) => AddService(),
+                  'HistoryScreen':(context) => HistoryScreen(),
                 },
               ),
             );
